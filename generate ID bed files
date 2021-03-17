@@ -1,0 +1,18 @@
+# generate ID bed files
+for chr in {1..22};
+do
+plink2 --vcf /home/molpsych/data/snp_genotypes/psychchip_ID/imputed/$chr.vcf.gz dosage=GP \
+       --vcf-idspace-to _ \
+       --const-fid \
+       --allow-extra-chr 0 \
+       --out /mnt/10tbstore/projects/ava/id_chr$chr
+done
+
+
+### chromosome 22 only
+
+plink2 --vcf /home/molpsych/data/snp_genotypes/psychchip_ID/imputed/22.vcf.gz dosage=GP \
+       --vcf-idspace-to _ \
+       --const-fid \
+       --allow-extra-chr 0 \
+       --out /mnt/10tbstore/projects/ava/id_chr22
