@@ -1,5 +1,6 @@
 # molpsych
 MSc molecular psychiatry project
+
 Whilst genetic liability is shared amongst psychiatric conditions, the specific causative variants for different disorders remain largely unknown. Genetic variation associated with common psychiatric disorders has reported with a range of genetic causes such as copy number variants, aneuploidies and single nucleotide polymorphisms (SNPs). Previous GWAS have identified SNPs associated with psychiatric conditions such as autism spectrum disorder (ASD), schizophrenia and major depression disorder (MDD), but less work has been carried out in the context of intellectual disability (ID).
 
 There is a significant increased prevalence of psychiatric disorders amongst adults with ID compared to the general population, with estimates of an increased risk of up to 10-fold. Polygenic risk score (PRS) analysis was undertaken on a small sample of 242 individuals using genetic data from patients with ID and comorbid psychiatric conditions. Analysis was undertaken for attention deficit hyperactive disorder (ADHD), ASD, anxiety disorders, MDD, schizophrenia and bipolar disorder. PRS analysis was carried out on PRSice using GWAS results of individuals with European ancestry, followed by a second set of PRS analysis carried out using a dataset of the samples with ID merged with healthy control samples.
