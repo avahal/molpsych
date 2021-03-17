@@ -1,0 +1,15 @@
+setwd("~/projects/bp_adhd/results_adj")
+pval<-read.table("All_Analyses10jul19-pvalues.txt", header = TRUE)
+### Calculate False Discover Rate p-values in R
+
+pval$FDR <- p.adjust(pval$p, method="BH")
+View(pval)
+write.table(pval, "All_Analyses10jul19-pvalues-FDR.txt", row.names = FALSE, quote = FALSE)
+
+setwd("~/projects/bp_adhd/results_adj")
+pval<-read.table("all-pvals_101019.txt", header = TRUE)
+### Calculate False Discover Rate p-values in R
+
+pval$FDR <- p.adjust(pval$p, method="BH")
+View(pval)
+write.table(pval, "all-pvals_101019-pvalues-FDR.txt", row.names = FALSE, quote = FALSE)
