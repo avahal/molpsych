@@ -1,0 +1,105 @@
+#### Generate a merged data file between imputed PsychChip ID data and PsychChip control
+
+data.
+
+#### Only SNPS from the imputed PsychChip ID data are used and then any SNP with a case
+control missingness p value of less than 0.00001 is removed
+
+plink2 --bfile /mnt/10tbstore/projects/ava/psychchip_ID_imputed/psychchip_ID_qc_info0.8 \
+
+--bmerge
+/mnt/10tbstore/projects/alc_symptom_score_gwas/ALC/pchipCtrl_pchipALC_info01/pchipC
+trl_pchipALC_infoO1 .qc-hre.al.pca.ok.3nd.01 \
+
+--out psychchip_ID_ctrl_merge
+
+plink2 --bfile /mnt/10tbstore/projects/ava/psychchip_ID_imputed/psychchip_ID_qc_info0.8 -
+-exclude psychchip_ID_ctrl_merge.missnp --make-bed --out source 1_tmp
+
+plink2 --bfile
+/mnt/10tbstore/projects/alc_symptom_score_gwas/ALC/pchipCtrl_pchipALC_info0 1/pchipC
+trl_pchipALC_info01.qc-hre.al .pca.ok.3nd.01 --exclude psychchip_ID_ctrl_merge.missnp --
+extract source 1_tmp.bim --filter-controls --make-bed --out source2_tmp
+
+plink2 --bfile sourcel_tmp --bmerge source2ctrl_tmp --geno --make-bed  --out
+psychchip_ID_ctrl_merge
+
+base=psychchip_ID_ctrl_merge
+
+input=input
+
+qestep=qe_steps
+
+plink2 --bfile $base --missing --out 01.Sbase
+
+plink2 --bfile $base --het --out 01 $base
+
+plink2 --bfile $base --maf 0.05 --missing --out 01.$base.common
+
+plink2 --bfile $base --maf 0.05 --het --out 01 .$base.common
+
+plink2 --bfile $base --allow-no-sex --test-missing --out 06.$base
+
+# then use script cc_missing_qc.R to identify SNPs with case control missing differences.
+
+plink2 --bfile psychchip_ID_ctrl_merge --exclude cc_remove_list.txt --make-bed --out
+psychchip_ID_ctrl_merge.qc
+
+plink2 --allow-no-sex --bfile $base.qc --maf 0.06 --indep 50 5 2 --out 06.$base
+plink2 --allow-no-sex --bfile $base.qc --extract 06.$base.prune.in --make-bed --out 07.Sbase
+
+plink2 --allow-no-sex --bfile 07.Sbase --exclude range $input/Id_regions_hg19.txt --extract
+$input/
+
+hapmap3r2_CEU.CHB JPT.YRI.founders no-at-cg-snps_lifted.bim --make-bed --out 08 Sbase
+
+ed qc_steps
+
+convertf -p <(printf "genotypename: 08 .$base.bed
+snpname: 08 .$base.bim
+
+indivname: 08.$base.fam
+
+outputformat: EIGENSTRAT
+
+#line below is required if SNPs are not in chromosomal order. Else change to YES
+pordercheck: NO
+
+genotypeoutname: 08 .$base.eigenstratgeno
+snpoutname: 08 .$base.snp
+
+indivoutname: 08.$base.ind")
+
+## Run of Eigenstrat SmartPCA
+
+# Produces 100 PCs
+
+smartpca.perl \
+
+-i 08.$base.eigenstratgeno \
+
+-a 08.$base.snp \
+
+-b 08 Sbase.ind \
+
+-0 08 $base.pca \
+
+-p 08 $base.plot \
+
+-e 08.$base.eval \
+
+-1 08.$base.smartpca.log \
+
+-m0\
+
+-t 100\
+
+-k 100\
+
+-s 6
+
+mkdir results
+
+mv psychchip_ID_ctrl_merge.qc* results/
+
+##now use R script write.covars.R
