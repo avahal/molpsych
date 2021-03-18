@@ -1,0 +1,58 @@
+## PRSice is better with -9/NA (check whether you are using binary or quantatitive phenotype)
+for missing data
+
+Rscript /home/molpsych/programs/PRSice2/PRSice.R \
+--prsice /home/molpsych/programs/PRSice2/PRSice_linux \
+--bar-levels 5e-08 ,le-07 ,1le-06,1e-05, 1e-04,1e-3,0.01,0.05,.0.5,1\
+
+--base
+/mnt/10tbstore/projects/ava/ID_PRSice/anxiety/20002_1287.gwas imputed_v3.both_sexes.ts
+V.gz.correct \
+
+--clump-kb 250 \
+
+--clump-p 1.000000 \
+
+--clump-r2 0.100000 \
+
+--fastscore \
+
+--score std \
+
+--snp CHR:BP\
+
+--pvalue pval \
+
+-ALAI\
+
+--A2 A2\
+
+--stat beta \
+
+--beta \
+
+--cov final.pca.txt \
+
+--cov-col PCA1,PCA2,PCA3 \
+
+--pheno /mnt/10tbstore/projects/ava/ID_PRSice/anxiety/phenotype_ID_200720.txt \
+--pheno-col Anxiety \
+
+--binary-target T \
+
+--base-info INFO:0.9\
+
+--interval 0.000000050 \
+
+--lower Se-08 \
+
+--model add \
+
+--out PRSice_Anxiety_300720 \
+
+--seed 3228425514 \
+
+--target /mnt/10tbstore/projects/ava/ID_PRSice/anxiety//psychchip_ID_qc_info0.8.new \
+--extract PRSice_Anxiety_300720.-valid \
+
+--ignore-fid T
