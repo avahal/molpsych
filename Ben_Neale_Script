@@ -1,0 +1,16 @@
+### Sort out Ben Neale UKB columns for PRSice
+
+cp 20002_1287.gwas.imputed_v3.both_sexes.tsv.bgz temp
+sed "s/Avariant/CHR:BP:A1:A2/g" temp > temp!
+
+awk -F '[:]' ‘{ print $0, $1." "$2," "$3," "$4} temp! | awk
+'{print$13":"$14,$15,$16,$1,$2.$3 $4.$5 $6,$7,$8,$9.$10,$11,$12}' > temp2
+
+mv temp2 20002_1287.gwas.imputed_v3.both_sexes.tsv.bgz.correct
+## Sort out BIM file
+
+head psychchip_ID_ctrl_merge.gc.bim > temp
+
+awk '{print$1,$1":"$4,$3.$4,$5,$6}' temp > temp!
+
+#cp temp! psychchip_ID_qc_info0.8.bim
