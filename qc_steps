@@ -1,0 +1,740 @@
+# #!/bin/bash
+#### updated to hg38 #iH#HH
+
+### Script to run run QC on SNP-assay data generate final QC-files and report outcome in
+Rmarkdown report
+
+## Check argumets
+if [ "$#" -ne 4 J; then
+clear
+
+echo -e "\n Script to run run QC on SNP-assay data; generate final QC-files and report details
+in Rmarkdown report"
+
+echo -e "Please provide 2 arguments: \n |) Full fill path to the plink files to run QC on \n 2)
+Base filename of the file-set \n 3) Project title (no spaces please) \n 4) Chiptype (also no spaces
+please) \n Example: ./gwas_qc_report /home/molpsych/data/snp_genotypes/psychchip
+mequ1_pchip-merge Schizophrenia_bipolar_ctrl psychchip\n"
+
+exit |
+fi
+## Pipeline for GWAS QC and reporting
+## Settings
+hwe_threshold=0.000001 # HWE threshold for autosomes
+hwe_threshold_chrX=0.0001 # HEW threshold for X chromosomes (only women)
+miss_threshold=0.000001 # Case control difference in missingness p-value threshold
+het_sd=3 # Standard deviation threshold for heterozygosity
+
+het_upper_only=T # Only apply the upper heterozygosity threshold (to much
+heterozygosity) - or both upper and lower
+
+final_gender_error_exclude=true # In final gender check exclude miss matching genders - true
+or flase
+
+miss_max=0.05 # Genome wide misssingness threshold
+
+snp_miss_max=0.1 # Per SNP missingness threshold
+### Folders and variables
+project_title=$3
+
+chiptype=$2
+
+filepath=$1
+
+base=$2
+
+qcesteps=qc_steps
+
+plots=plots
+
+results=results
+
+input=input
+gender_up=$input/gender_update txt
+pheno_up=$input/phenotype_update.txt
+idb_error=$input/ibd_exclude txt
+
+### Setup
+
+mkdir -p $qesteps
+
+mkdir -p $plots
+
+mkdir -p $results
+
+mkdir -p $input
+
+echo) -e | "\niHHHHHAAAHHHAHHEAAAHHHEHHE = START OF GWAS QC REPORT
+JARRE"
+
+echo "(1) Sort chromosomal order and split pseudoautosomal region on X in to separate chr
+XY if needed"
+
+## Fixing Error: .bim file has a split chromosome & heterozygotic markers on male X
+xypresent= cut -fl $filepath/$base.bim | grep 25 | we -I
+if [ $xypresent -eq 0 ]
+
+then plink2 --allow-no-sex --bfile $filepath/$base --split-x hg38 no-fail --make-bed --out
+$qesteps/01 $base ## IF XY does not exsist run this else run
+
+else
+
+plink2 --allow-no-sex --bfile $filepath/$base --make-bed --out $qcsteps/O1 Sbase ## IF XY
+does not exsist run this else run
+
+fi
+echo -e "\nIndividual and SNP QC"
+TERE AE TERETE TEE TERE AE EE A AE TEE TE TE ET
+
+echo -e "\nAllelic frequency"
+
+plink2 --bfile $qcsteps/01.$base --freq --out $qcsteps/O1 .Sbase
+### Remove and exclude
+#### Individuals missing to much data or have to much heterozyogisity
+
+echo "Heterozygosity and missingnsess"
+
+plink?2 --bfile $qcsteps/01 .$base --missing --out $qcsteps/01 $base
+
+plink2 --bfile $qcsteps/01.$base --het --out $qcsteps/01 $base
+
+plink2 --bfile $qcsteps/01.$base --maf 0.05 --missing --out $qcesteps/01.$base.common
+plink2 --bfile $qcsteps/01.$base --maf 0.05 --het --out $qcesteps/01.$base.common
+
+## find heterozygous outliers
+
+## Command args 1: qc_folder, 2: base_name, 3: sd defined as outliers, 4: remove only upper
+outliers? if F lower outliers are also removed!
+
+Rscript scripts/make_het_remove_list.R $qcesteps $base Shet_sd $het_upper_only
+
+plink2 --bfile $qcsteps/O1.Sbase --allow-no-sex --mind $miss_max  --remove
+$qesteps/O1 -heterozygous_outliers.txt --make-bed --out $qcsteps/O1la.$base
+
+HHH SNPs missing
+
+plink2 --bfile $qcsteps/O1a.$base --missing --out $qesteps/Ola.Sbase
+
+plink2 --bfile $qcsteps/Ola.Sbase --allow-no-sex --geno $snp_miss_max --make-bed --out
+$qesteps/01b.$base
+
+Ht SNPs out of HWE - with more strigient threshold for women on X (see
+http://onlinelibrary.wiley .com/doi/10.1002/gepi.21782/full)
+
+plink2 --bfile $qcsteps/O1b.$base --hardy --out $qcsteps/01b.$base
+
+awk -v varl=${hwe_threshold} -v var2=${hwe_threshold_chrxX} '(($1<23 && $3=="ALL"
+&& $9<varljil($l>=23 && $3=="ALL" && $9<var2))' Sqesteps/OlbSbasehwe >
+$qcsteps/01b.Sbase hwe.exclude
+
+plink2 --bfile $qcesteps/01b.$base --allow-no-sex --exclude $qcsteps/01b.$base.hwe.exclude --
+make-bed --out $qesteps/Olc.$base
+
+#i### If zcalls have been performed overwrite current SNPs with zcall SNPs for which MAF <
+0.1 HAHAH
+
+if [ -e ./zcall/zcalls.bed }
+then
+## List SNPs with MAF <0.1
+plink2 --bfile $qcsteps/O1c.$base --freq --out $qcesteps/O1c.Sbase
+awk '$5<0.01 {print $2}' $qcsteps/01c.$base.frq > $qesteps/O01c.Sbase.SNPs_maf0.01
+## Extract all of these from the zcalls
+
+plink2 --bfile ./zcall/zcalls --extract $qcesteps/01c.$base.SNPs_maf0.01 --make-bed --out
+$qesteps/Olc.zcalls_maf0.01
+
+## Remove zcalls with failing HWE and geno
+plink2 --bfile $qcsteps/O1c.zcalls_maf0.01 --hardy --out $qcsteps/01c.zcalls_maf0.01
+
+awk -v varl=${hwe_threshold} ‘'($9<varl)' $qcsteps/Olc.zcalls_maf0.01.hwe >
+$qesteps/Olc zcalls_maf0.01 hwe.exclude
+
+plink2 --bfile $qesteps/O1c.zcalls_maf0.01 --exclude
+$qesteps/Olc zcalls_maf0.01 hwe.exclude --keep $qesteps/01c.$base.fam --geno
+$snp_miss_max --make-bed --out $qesteps/01c.zcalls_maf0.01.qc
+
+## Remove SNPs from original set which have good zcalls and merge the zcalls in!
+cut -f2 $qcsteps/O1c.zealls_maf0.01.qc.bim > $qcsteps/O1c.zcalls_maf0.01.qc.snps
+
+plink2 --bfile $qcsteps/Olc.$base --exclude $qcsteps/O1c.zcalls_maf0.01.qc.snps --make-
+bed --out $qcsteps/01c.$base.no_rare
+
+plink2 --bfile $qcsteps/Olc.$base.no_rare --bmerge $qcsteps/Olc.zcalls_maf0.0l.qe --
+merge-mode 2 --out $qesteps/O1d.$base
+
+## Save a list of SNPs called with zcall to result folder
+
+cp $qesteps/01c.zcalls_maf0.01.qc.snps $results/zcalled_snps txt
+else
+
+plink2 --bfile $qcsteps/O1c.$base --make-bed --out $qcsteps/01d Sbase
+fi
+#### Identify duplicate and triplicate SNPs
+
+FAH TE TET TEA A TEE ETE EET EP
+JAH
+
+plink2 --bfile $qcsteps/01d Sbase --allow-no-sex --list-duplicate- vars --out $qcsteps/01d.$base
+## List various duplicates
+
+awk '{print $4}' $qcsteps/O1d $base.dupvar > $qcsteps/O1d.$base.dupvar.originals txt
+
+awk '{print $5}' $qcsteps/O1d.$base.dupvar > $qcsteps/01d.$base.dupvar.duplicates.txt
+
+awk '($6!="){print $6}! S$qesteps/01d Sbase.dupvar >
+$qesteps/O1d.$base dupvar.triplicates.txt
+
+awk '($6!=""){ print $5}' S$qesteps/01d.Sbase.dupvar >
+$qcesteps/O01d.$base dupvar.dupe_names_for_triplicates.txt
+
+awk (($6!=""){print $4.$5,$6}' $qesteps/01d.$base.dupvar >
+$qesteps/O1d.$base dupvar.all_trip_ids.txt
+
+awk '($6==""){print $4,$5,56}' $qesteps/01d.$base.dupvar >
+$qesteps/O1d.$base dupvar.all_dupe_ids txt
+
+## Generate a list of all [Ds for markers which are non-unique
+
+cat Sqesteps/01d.$base dupvar.originals.txt $qesteps/O1d.$base.dupvar duplicates.txt
+$qesteps/O1d.$base dupvar.triplicates.txt > $qcsteps/01d.$base.dupvar.non_unique txt
+
+## Exclude markers which are genotyped multiple times under different names from dataset
+
+plink2 --bfile $qcsteps/Old.$base --exclude $qcsteps/01d.$base.dupvar.non_unique.txt  --
+make-bed --out $qcsteps/01d.$base.dupvar.unique_only
+
+## Generate separate binary filesets for originals, duplicates and triplicates (and subset of
+duplicates that are triplicates)
+
+plink2 --bfile $qcesteps/01d.$base --extract $qesteps/01d.$base.dupvar.originals txt --make-bed
+--out $qesteps/01d.$base.dupvar.non_unique_originals
+
+plink2 --bfile $qcsteps/O1d.$base --extract $qcsteps/01d.$base dupvar.duplicates.txt --make-
+bed --out $qcsteps/0 1d.$base dupvar-non_unique_duplicates
+
+plink2 --bfile $qcsteps/O1dSbase --extract $qcsteps/O01d.$base.dupvar.triplicates txt --make-
+bed --out $qcsteps/01d.$base dupvar.non_unique_triplicates
+
+plink2 --bfile $qesteps/01d.$base --extract
+$qcesteps/01d.$base dupvar.dupe_names_for_triplicates.txt --make-bed --out
+$qesteps/O1d.$base dupvar.triplicates_in_dupes
+
+## Generate conflicting genotype reports by attempting to merge binary fileset pairs (1v2, lv3,
+2v3 and 3s_in_2v1l)
+
+plink2 --bfile $qcesteps/01d.$base dupvar.non_unique_triplicates --bmerge
+$qcesteps/O1d.$base dupvar.non_unique_duplicates --merge-equal-pos --merge-mode 7 --out
+$qesteps/O1d.$base dupvar.trips_v_dupes
+
+plink2 --bfile $qesteps/01d.$base dupvar.non_unique_triplicates --bmerge
+$qesteps/O1d.$base dupvar.non_unique_originals --merge-equal-pos --merge-mode 7 --out
+$qcesteps/O1d.$base dupvar.trips_v_orig
+
+plink2 --bfile $qesteps/01d.$base dupvar.triplicates_in_dupes --bmerge
+$qcesteps/O1d.$base dupvar.non_unique_originals --merge-equal-pos --merge-mode 7 --out
+$qcsteps/O1d.$base dupvar.trips_in_dupes_v_orig
+
+plink2 --bfile $qcesteps/0 1d-Sbase dupvar non_unique_originals --bmerge
+$qesteps/O1d.$base dupvar.non_unique_duplicates --merge-equal-pos --merge-mode 7 --out
+$qesteps/O1d.$base .dupvar.dupes_v_orig
+
+## Generate counts of conflicting genotypes per marker
+
+tail -n+2 $qcsteps/O1d.$base.dupvar trips_v_orig diff | awk '{print $1}'l sort | uniq -c | sort -b -
+k2,2 > Sqcsteps/O1d Sbase dupvar.trips_v_orig_conflicts.txt
+
+tail -n+2 $qcsteps/O1d.$base.dupvar.trips_v_dupes.diff | awk '{print $1}' | sort | unig -c | sort -
+b -k22 > $qcsteps/01d.$base.dupvar.trips_v_dupes_conflicts.txt
+
+tail -n+2 $qcsteps/01d.$base.dupvar.trips_in_dupes_v_orig.diff | awk '{print $1}'l sort | unig -
+c| sort -b -k2,2 > $qcsteps/01d.$base.dupvar.trips_dupes_v_orig_conflicts txt
+
+tail -n+2 $qesteps/01d.Sbase dupvar.dupes_v_orig diff | awk '{print $1}' | sort | unig -c | sort -
+g -k1,1 > $qcsteps/O1d.$base.dupvar.dupes_v_orig_conflicts.txt
+
+## Find duplicated variants(SNPs) that have create conflicting genotypes. Arguments (7):
+dupvar.all_trip_ids.txt + The four genotype conflict counts generated above + qc_steps + base
+
+Rscript scripts/find_conflicting_dupvars.R $qcsteps/01d.Sbase .dupvar.all_trip_ids.txt\
+S$qesteps/O1d Sbase.dupvar.trips_v_orig_conflicts.txt \
+$qesteps/O1d Sbase.dupvar.trips_v_dupes_conflicts.txt \
+$qesteps/01d Sbase.dupvar.trips_dupes_v_orig_conflicts.txt \
+$qcesteps/01d.$base.dupvar.dupes_v_orig_conflicts.txt \
+$qesteps \
+$base
+
+#Remove markers failing duplicate analysis from filesets
+
+plink2 --bfile $qesteps/01d $base.dupvar.non_unique_originals --exclude
+$qesteps/O1d.$base dupvar.conflicting_markers.txt --make-bed --out
+$qesteps/O1d.$base dupvar.non_unique_originals_no_conflicts
+
+plink2 --bfile $qesteps/01d.Sbase.dupvar.non_unique_duplicates --exclude
+$qcesteps/O1d.$base dupvar.conflicting_markers.txt --make-bed --out
+$qesteps/01d.$base dupvar.non_unique_duplicates_no_conflicts
+
+plink2 --bfile $qesteps/01d.$base dupvar non_unique_triplicates --exclude
+$qesteps/O1d.$base dupvar.conflicting_markers.txt --make-bed --out
+$qesteps/O1d.$base dupvar.non_unique_triplicates_no_conflicts
+
+#Merge duplicate markers back in to original fileset using default merge-mode
+
+plink2 --bfile $qcsteps/01d.$base.dupvar.non_unique_originals_no_conflicts --allow-no-sex -
+-bmerge $qcesteps/01d.$base.dupvar.non_unique_duplicates_no_conflicts --merge-equal-pos -
+-make-bed --out $qcsteps/O1d.$base.dupvar.non_unique_originals_duplicates_no_conflicts
+
+plink2 --bfile $qcsteps/01d.$base.dupvar.non_unique_originals_duplicates_no_conflicts  --
+allow-no-sex --bmerge $qcsteps/01d.$base.dupvar.non_unique_triplicates_no_conflicts  --
+merge-equal-pos --make-bed --out $qcesteps/01d.$base .dupvar.non_unique_no_conflicts
+
+#Merge non-conflicting markers back into the original dataset
+
+plink2 --bfile $qesteps/O1d-$base.dupvar.unique_only —--allow-no-sex —--bmerge
+$qesteps/O1d.$base dupvar.non_unique_no_conflicts --make-bed --out $qesteps/02 Sbase
+
+echo -e "\n(3)(4) Update sex and sex check"
+
+TEETER TEE TE TEETER TATE EE TA EA
+
+# Examine inital gender issues
+
+plink2 --bfile $qcsteps/02.$base --check-sex 0.3 0.8 --out $qcesteps/02 $base
+sexissues= grep "PROBLEM" qc_steps/02.$base.sexcheck | we -I
+if (( $sexissues > 0 ))
+then
+if [ -e $gender_up ]
+then
+
+echo -e "\nGender update data given in input - applying these"
+
+## Prep update files from input
+
+### Arguments are: 1) plink.fam, 2) input file with updates (w header),3) qcsteps folder
+Rscript scripts/update_genderl R $qcsteps/02.$base.fam $gender_up $qcsteps
+
+## Run update
+
+plink2 --bfile $qcsteps/02.Sbase --update-sex $qcsteps/02.update_gender.txt --make-
+bed --out $qcsteps/03.$base
+
+plink2 --bfile $qcsteps/03 Sbase --check-sex 0.3 0.8 --out $qesteps/03 $base
+else
+
+plink2 --bfile $qcsteps/02 $base --make-bed --out $qcsteps/03 $base
+
+cp $qcsteps/02 .Sbase.sexcheck $qcsteps/03.$base.sexcheck
+fi
+
+echo -e "\nUpdate unsupplied genders and exclude any remaining sex mismatches"
+
+# Prep update files from sexcheck
+
+# Arguments are: 1) plink.sexcheck, 2) qcsteps folder
+
+Rscript scripts/update_gender2.R $qcsteps/03.$base sexcheck $qcsteps
+## Run update
+
+if | $final_gender_error_exclude = true | ; then
+
+plink2 --bfile $qcsteps/03.$base --update-sex $qcsteps/03 update_gender.txt --remove
+$qesteps/03 .gender_exclude txt --make-bed --out $qcsteps/04 Sbase
+
+else
+
+plink2 --bfile Sqcsteps/03.Sbase --update-sex $qcsteps/03 update_gender.txt --make-
+bed --out $qcsteps/04.$base
+
+fi
+plink2 --bfile $qcsteps/04.$base --check-sex 0.3 0.8 --out $qesteps/04.Sbase
+else
+
+echo -e "\nNo gender issues found!"
+
+plink2 --bfile $qcsteps/02.$base --make-bed --out $qcsteps/04 .$base
+fi
+
+echo -e "\n (2) Heterozygous haploid genotypes"
+
+plink2 --bfile $qcsteps/04.$base --set-hh-missing --make-bed --out $qcsteps/05 .$base
+
+echo -e "\n (5) IBD"
+
+RAHAT ETT TEE TEE TET
+
+## Calculate Indentical by decent matrix using the complete set of samples and common SNPs
+from gencal
+
+plink2 --allow-no-sex --bfile $qcsteps/05.$base --exclude range $input/high-LD-regions-
+hg38.txt --maf 0.05 --genome --out $qcesteps/05 .$base
+
+echo "finding outliers"
+
+sed -r 's/\s//g' $qesteps/O5.$base.genome | sed -r 'sAst+At/g' | awk ' ($7< 0.77) ' >
+$qesteps/05 .$base genome outliers
+
+sed -r's/A\s //g' $qcsteps/05 $base.genome | sed -r 's\s+/At/g' | awk ' ($7> 0.77) ' | head -n1000
+> $qesteps/05 Sbase.genome.1000normal
+
+echo "deleting genome file"
+
+rm $qesteps/05 $base.genome
+
+## List geneaology problems
+### Arguments are: 1) outlier file, 2) plink.fam, 3) qcsteps folder
+
+Rscript scripts/list_geneaology_problems.R Sqesteps/05 $base .genome.outliers
+$qcesteps/05 .$base.fam $qesteps
+
+## Check the three 05.ibd_* files for problem and asses if any action should be done
+
+### If any problems exsist create the file input/ibd_exclude.txt with two columns "IID"
+"Exclusion reason"
+
+if [ -e $idb_error |
+then
+
+## Arguments are: 1) input samples to be removed due to IBD, 2) fam file, 3) output plink
+exclusion list
+
+Rscript scripts/fix_geneaology_problems.R S$idb_error $qesteps/05.$base.fam
+$qesteps/05 .to_exclude.txt
+
+## Exclude samples based on relatives and duplicates identified
+
+plink2 --allow-no-sex --bfile $qcsteps/05.$base --remove $qcsteps/05.to_exclude.txt --
+make-bed --out $qcesteps/06.$base
+
+## Calculate and plot IBD again to check changes
+
+plink2 --allow-no-sex --bfile $qcsteps/06.$base --exclude range Sinput/high-LD-regions-
+hg38 txt --maf 0.05 --genome --out $qcsteps/06.$base
+
+echo -e "\nFinding outliers"
+
+sed -r 's/M\s//g' $qcsteps/06.$base.genome | sed -r 'sAs+At/g' | awk ' ($7< 0.77) | >
+$qcsteps/06.$base.genome.outliers
+
+sed -r's/\s //g' $qesteps/06.$base.genome | sed -r 's/\s+/t/g' | awk' ($7> 0.77) ' | head -n1000
+> $qesteps/06.Sbase.genome.1000normal
+
+echo "deleting .genome file - less is more"
+rm $qesteps/06.$base.genome
+else
+
+echo -e "\nNo IBD outlier removed"
+
+plink2 --allow-no-sex --bfile $qcsteps/05.$base --make-bed --out $qcsteps/06.$base
+
+fi
+
+echo "Update phenotyes"
+
+### Arguments are: 1) Family file to update, 2) file to update from (3 col: FID,ID.Newpheno)
+if [-e $pheno_up ]
+then
+echo -e "\n Updateting phenotyes"
+Rscript scripts/update_phenotypes.R $qcsteps/06.$base fam $pheno_up
+fi
+
+echo -e "\nCases - Control missigness"
+
+### Test for different genotype call rates between
+plink2 --bfile $qcsteps/06.$base --allow-no-sex --test-missing --out $qcsteps/06.$base
+
+echo -e "\n(6)(7)(8) Check Ancestory"
+
+### Generate symbolic links for hapmap input data
+
+In -s — /home/molpsych/data/hapmap/hapmap3r2_CEU.CHB.JPT.YRI.founders.no-at-cg-
+snps.lifted.hg38.bed input/
+
+In -s — /home/molpsych/data/hapmap/hapmap3r2_CEU.CHB.JPT.YRI_founders.no-at-cg-
+snps.lifted.hg38.bim input/
+
+In -s~— /home/molpsych/data/hapmap/hapmap3r2_CEU.CHB.JPT.YRI.founders.no-at-cg-
+snps.lifted.hg38.fam input/
+
+In -s /nome/molpsych/data/hapmap/hapmap_sample_info.txt input/
+
+In -s /nome/molpsych/data/hapmap/Id_regions_hg38 txt input/
+
+FART ETT TE ETE TEE TET EAE
+## (6) Prune data set
+
+plink2 --allow-no-sex --bfile $qcsteps/06.$base --maf 0.06 --indep 50 5 2 --out
+$qesteps/06.$base
+
+plink2 --allow-no-sex --bfile $qcsteps/06.$base --extract $qcsteps/06.$base-prune.in --make-
+
+bed --out $qcsteps/07.$base
+
+## (7) Exclude long-range LD regions and use only SNPs that overlap with hapmap
+
+## This reduced data set has plenty of information to perform PCA and will not be biased by
+
+LD or rare SNPs
+
+plink2 --allow-no-sex --bfile $qcsteps/07 Sbase --exclude range $input/ld_regions_hg38 txt --
+
+extract $input/hapmap3r?2_CEU-CHB.JPT.YRI founders.no-at-cg-snps lifted hg38.bim
+
+make-bed --out $qcsteps/08 .$base
+
+#### First pass of Eigenstrat no removeal of outliers
+
+## Convert to Eigenstrat
+
+convertf -p <(printf "genotypename: $qcsteps/08.$base.bed
+snpname: $qcsteps/08 Sbase.bim
+
+indivname: $qcsteps/O8.$base fam
+
+outputformat: EIGENSTRAT
+
+#line below is required if SNPs are not in chromosomal order. Else change to YES
+pordercheck: NO
+
+genotypeoutname: Sqcsteps/08 Sbase.cigenstratgeno
+snpoutname: $qcsteps/08.$base.snp
+
+indivoutname: $qcsteps/08.$base.ind")
+
+## Run of Eigenstrat SmartPCA
+
+# Produces 100 PCs
+
+smartpca.perl \
+
+-i $qesteps/O8 .$base.cigenstratgeno \
+
+-a $qesteps/08.$base.snp \
+
+-b $qesteps/08 $base.ind \
+
+-o $qesteps/08 $base.pca \
+
+-p $qcesteps/08 $Sbase-.plot \
+
+-e $qesteps/08.$base.eval \
+
+-| $qcsteps/08 $base smartpca.log \
+
+-m0\
+
+-t 100\
+
+-k 100\
+
+-8 6
+
+## Check for assocation between PCA and case/ctrl status
+
+### Minor edit to allow import into R
+
+sed -i -e 's/4[ \t]*//' -e 's/:/ /g' Sqcesteps/08 .Sbase pca.evec
+Rscript scripts/analyse_pca.evac.R $qcsteps/08 Sbase pca.evec
+### Second pass of Eigenstrat - Removal of outliers
+
+## NB: -t is set to be equalt to the number of significant PCs found in
+$qesteps/08 .$base pca.evec.assoc
+
+nsignif= cat $qcsteps/08 Sbase.pca.evec.assoc.nsignif’
+
+echo -e "\nEigenstrat will remove outliers based on $nsignif principal components!"
+
+smartpca.perl \
+
+-i $qcsteps/08 $base.eigenstratgeno \
+-a Sqesteps/O8.$base.snp \
+
+-b $qesteps/08 $base.ind \
+
+-o $qesteps/08 Sbase.pca_outlier.pca \
+-p $qesteps/08 $base.pca_outlier.plot \
+-e $qesteps/08.$base.pca_outlier.eval \
+-| $qesteps/08 $base.pca_outlier.smartpca.log \
+-m5\
+
+-t $nsignif \
+
+-k 100\
+
+-8 6
+
+66
+
+## Check for assocation between PCA and case/ctrl status
+
+sed -i -e 's/A[ \t]*//' -e 's/:/ /g' Sqesteps/O8 Sbase.pca_outlier.pca.evec
+Rscript scripts/analyse_pca.evac.R $qcsteps/08 .$base.pca_outlier pca.evec
+## Create list of samples to remove.
+
+awk /REMOVED/ {print $3}' $qcesteps/08 $base.pca_outlier.smartpca.log | sed 's/:/ /g' >
+qc_steps/08 .pea_outliers txt
+
+#i#t## (8) Remove samples and rerun SmartPCA
+### Remove samples
+
+plink2 --allow-no-sex --bfile $qcsteps/08.Sbase --remove $qcsteps/08.pca_outliers.txt --make-
+bed --out $qcsteps/09.$base
+
+#### Third pass of Eigenstrat - Calculate PCA for covariates
+convertf -p <(printf "genotypename: $qcsteps/09.$base bed
+snpname: $qcsteps/09 Sbase.bim
+
+indivname: $qcsteps/09.$base fam
+
+outputformat: EIGENSTRAT
+
+#line below is required if SNPs are not in chromosomal order. Else change to YES
+pordercheck: NO
+
+genotypeoutname: S$qcsteps/09 S$base.cigenstratgeno
+snpoutname: $qcsteps/09.$base.snp
+
+indivoutname: $qcsteps/09.$base.ind")
+
+smartpca.perl \
+
+-i $qesteps/09 $base.cigenstratgeno \
+
+-a $qesteps/09.Sbase.snp \
+
+-b $qesteps/09.$base.ind \
+
+-o $qesteps/09.$base.covariates.pca \
+
+-p $qesteps/09 $base.covariates.plot \
+
+-e $qcsteps/09.$base.covariates.eval \
+
+-| $qcsteps/09 .$base covariates smartpca.log \
+
+-m0\
+
+tO\
+
+-k 100\
+
+-s 6\
+
+## Check for assocation between PCA and case/ctrl status
+
+sed -i -e's/4[ \t]*//' -e 's/:/ /g' Sqesteps/09 Sbase.covariates pca.evec
+Rscript scripts/analyse_pca.evac.R $qcsteps/09 .$base covariates pca.evec
+## Eigenstrat With HAPMAP - For plot of foreign samples
+
+JAH TET TET
+Hath
+
+## (9) Merge the pruned, no long Id, maf > 0.05, overlap with hapmap SNP data set with the
+hapmap data set
+
+## ‘OBS FAILS as multiallelic or FLIPED SNPs are present!! - but produces a list of merge-
+missnp that we use for exclusion in next step.
+
+plink2 --allow-no-sex --bfile $qesteps/08 Sbase --bmerge
+$input/hapmap3r2_CEU.CHB JPT.YRI founders.no-at-cg-snps.lifted hg38-bed \
+
+$input/hapmap3r2_CEU.CHB.JPT.YRI founders .no-at-cg-snps lifted. hg38.bim \
+$input/hapmap3r2_CEU.CHB.JPT.YRI_ founders .no-at-cg-snps lifted.hg38.fam \
+
+--extract $qcsteps/08 Sbase.bim --make-bed --out $qcsteps/10.$base
+
+## (9) Remove SNPs block the merging becouse 3 or more alleles are found - i simply exclude
+these here (is minor issue) but this should propberbly be checked!!
+
+plink2 --allow-no-sex --bfile $qcsteps/08 $base --exclude $qcsteps/10.$base-merge.missnp --
+make-bed --out $qesteps/10.$base
+
+## (10) Merge our data with the hapmap data set second time - Sucesses
+
+plink2 --allow-no-sex --bfile Sqesteps/10.Sbase --bmerge
+$input/hapmap3r2_CEU.CHB .JPT.YRI founders.no-at-cg-snps.lifted.hg38 bed \
+
+$input/hapmap3r2_CEU.CHB.JPT.YRI_ founders .no-at-cg-snps lifted.hg38.bim \
+$input/hapmap3r2_CEU.CHB.JPT.YRI_ founders .no-at-cg-snps lifted hg38 fam \
+--extract $qcsteps/10.$base.bim --make-bed --out $qcsteps/11.$base
+
+### Calculate PCA with Eigensoft
+
+## convert to eigensoft
+
+convertf -p <(printf "genotypename: $qcsteps/11.$base.bed
+
+snpname: $qesteps/11 Sbase.bim
+
+indivname: $qcsteps/11.$base fam
+
+outputformat: EIGENSTRAT
+
+#line below is required if SNPs are not in chromosomal order. Else change to YES
+
+pordercheck: NO
+
+genotypeoutname: $qesteps/11$base.eigenstratgeno
+
+snpoutname: $qcsteps/11.$base.snp
+
+indivoutname: $qcsteps/11.$base.ind")
+
+smartpca.perl \
+
+-i $qesteps/11.$base.eigenstratgeno \
+
+-a $qesteps/11.$base.snp \
+
+-b $qesteps/11.$base.ind \
+
+-o $qesteps/11 Sbase.hapmap.pca \
+
+-p $qesteps/! 1 .Sbase.hapmap.plot \
+
+-e $qesteps/11.$base.hapmap.eval \
+
+-| $qesteps/11.$base hapmap.smartpca.log \
+
+-m0\
+
+t3\
+
+-k 100\
+
+-s 6\
+
+# Convert format to fit R
+sed -i -e 's/4[ \t}*//' -e's/:/ /g' $Sqesteps/11.$base.hapmap.pca.evec
+### (12) Identify SNPs failing cluster inspections - with R script
+## Arguments are: 1) base name of project, 2) qc_steps folder
+
+# Rscript scripts/snps_failing_cluster_inspection.R $base $qcsteps
+
+echo "Run QC results generation"
+
+### Run reporter script
+
+## Arguments are: 1) qc_steps folder, 2) results folder, 3) base 4) hwe p-value threshold 5)
+hwe p-value threshold chrX 6) case-ctrl miss p-value threshold 7) heterozyogisity sd threshold
+
+# 8) shuld hetero sd threshold only be used on upper 9) missing_ness max 10)
+snp_missing_max 11) exclude samples with final gender errors
+
+Rscript scripts/reporterR $qcsteps $results $base $hwe_threshold $hwe_threshold_chrxX
+$miss_threshold $het_sd Shet_upper_only $miss_max $snp_miss_max
+$final_gender_error_exclude
+
+echo "Exclude based on QC results and generate final QC dataset "
+
+plink2 --allow-no-sex --bfile $qcsteps/06.$base --exclude Sresults/snp_failing_ge txt --remove
+$results/id_failing_gqe.txt --make-bed --out $results/$base.qc
+
+echo "Create markdown report"
+
+echo -e "base <- ‘$2’ \nprojecttitle  <-  ‘$project_title\nchiptype = <-
+'$chiptype'\ngender_error_exclude <- ‘$final_gender_error_exclude"" >>
+input/markdown_args.R
+
+Rscript -e "rmarkdown::render(‘scripts/markdown.Rmd', output_file = '‘$project_title.qc-
+report.html', output_dir = 'results')"
+
+echo "END OF SCRIPT"
