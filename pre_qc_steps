@@ -1,0 +1,62 @@
+#!/bin/bash
+
+plink2 --file /mnt/store/snp_genotypes/psychchip_ID/original_files/2016-123-
+ILL_IND_N=242/2016-123-ILL_IND_Psych1-1_N=242/PLINK_070317_0920/2016-123-
+ILL_IND_Psych1-1_N=242 --make-bed --out temp 1
+
+## Update IDs (use the normal ID IDs)
+
+Rscript make_id_update_list.R
+
+plink2 --bfile temp! --update-ids update_ids.txt --make-bed --out temp2
+
+## Update parents
+
+plink2 --bfile temp? --update-parents update_parents.txt --make-bed --out temp3
+
+## Keep only SNPs given to us in second Broad delivery - Exclude blacklisted SNPs (those
+removed by BROAD between | and 2 delivery of the initial psychchip data)
+cut -f2
+/home/molpsych/data/snp_genotypes/psychchip/original_supplied/mcqu 1_merge_220217.bi
+m > psychip_pass_snps.txt
+
+plink2 --bfile temp3 --extract psychip_pass_snps.txt --make-bed --out temp4
+## Flip minus strand snps
+
+plink2 --bfile temp4 --flip /home/molpsych/data/strand_data/PsychChip_v1-1_15073391_Al1-
+b37.strand.snps_on_minus_strand.txt --make-bed --out temp5
+
+## Exclude multimatched SNPs
+
+plink2 = --bfile temp5 = --exclude —/home/molpsych/data/strand_data/PsychChip_v1-
+1_15073391_A1-b37 multiple --make-bed --out temp6
+
+cut -d" " -f3 /home/molpsych/data/strand_data/PsychChip_v1-1_15073391_A1-b37.miss >
+/home/molpsych/data/strand_data/PsychChip_v1-1_15073391_A1-b37.miss sorted
+
+plink2 =--bfile temp6 = --exclude —//home/molpsych/data/strand_data/PsychChip_v1-
+1_15073391_A1-b37.miss.sorted --make-bed --out temp7
+
+## Create update files for plink to update SNPname, postions, alleles etc.
+
+Rscript pre_qc_snps_updater.R pchip_id.bim
+
+### Update SNPs
+
+plink2 --bfile temp7 --update-map position_update.txt --make-bed --out temp8
+plink2 --bfile temp8 --update-alleles alleles_update txt --make-bed --out pchip_id
+## Remove CM positions (as this makes eignestrat throw errors)
+
+awk 'OFS="\t" {print $1, $2, 0, $4, $5, $6}' pchip_id-bim > temp_pchip_id.bim.new
+my temp_pchip_id.bim.new pchip_id.bim
+
+## Update phenotype status to set all as cases
+
+awk 'OFS="\t" {print $1, $2, $3, $4, $5, 2}' pchip_idfam > temp_pchip_id.fam.new
+mv temp_pchip_id.fam.new pchip_id.fam
+
+# cp pchip_alc.bim pchip_alc.bim.preUpdate
+
+# ## cleanup
+
+# rm temp*
