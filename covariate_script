@@ -1,0 +1,38 @@
+covar <- read.table("qc_steps/O08.psychchip_ID_ctrl_merge.pca.evec" , header = F)
+covar <- covar[,2:5]
+
+colnames(covar) <- c("IID","PCA1","PCA2","PCA3")
+
+covar$FID <- (covar$IID)
+
+write.table(covar| ,c("FID" "IID" ,"PCAL","PCA2" "PCA3")],
+
+"results/final .pca.txt", row.names = F, col.names = F, quote = F)
+
+HHH? Fix for the weird scenario where pasticipant FID and IIDs are colon separated in
+column 1.
+
+# sed 'Id' qc_steps/08 .psychchip_ID_ctrl_merge.pca.evec > tmpfile
+# awk -F":"'$1=$1' OFS="\t" tmpfile > tmpfilel
+
+#$1
+
+# #covar <- read.table("qc_steps/08 psychchip_ID_ctrl_merge.pca.evec", text = gsub(':', | '),
+header = T)
+
+#
+# covar <- read.table("tmpfile1", text = gsub(':',''), header = F)
+#
+#
+
+# #covar <- read.table("qc_steps/08 psychchip_ID_ctrl_merge.pca.evec", sep = ":", header =
+F)
+
+# covar <- covar[1:5]
+
+# colnames(covar) <- c("FID", "UD" ,"PCA1","PCA2","PCA3")
+# #covarSFID <- (covar$IID)
+
+# write.table(covar[,c("FID" "HD" ,"PCA1","PCA2","PCA3")],
+
+# "results/final.pca.txt", row.names = F, col.names = T, quote = F)
