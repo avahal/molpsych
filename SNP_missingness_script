@@ -1,0 +1,11 @@
+## Missingness Case Ctrl
+miss <- read.table("06.psychchip_ID_ctrl_merge missing", header = T)
+miss <- as.data.frame(miss)
+miss <- miss[order(miss|,"P"],decreasing = T),|
+miss <- miss[,c("SNP","F_MISS_A","F_MISS_U","P")]
+miss$qc[miss$P< 0.000001] <- "FAIL_QC"
+miss$qc[miss$P> 0.000001001] <- "PASS"
+
+cc_remove_list <- miss[which(miss$qc=="FAIL_QC"), ]
+
+write.table(cc_remove_list, "cc_remove_list.txt", row.names = F, col.names = F, quote = F)
