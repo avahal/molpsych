@@ -1,0 +1,133 @@
+H### Script to convert imputed vcf data into stricly biallelic plink format
+
+#### Commands for this are fully stolen from: http://apol1.blogspot.co.uk/2014/11/best-
+practice-for-converting-vcf-files.html
+
+## Check argumets
+if ["S#" -ne 2 ]; then
+
+echo-e "\n VCF to Plink - Converts imputed vcf files to plink binary fixing all mulitalleic sites,
+keeping only info > 0.9"
+
+echo -e "\n Run after snp_info is generated!"
+
+echo "-----------— ---— -_-——
+
+ 
+
+echo -e "\n Please provide 2 argument: \n 1) Filepath to imputed data, n\ 2) Filepath to
+QCed fam file \n\nExample: vcf_to_plink
+/home/molpsych/snp_genotypes/psychchip/imputed
+/home/molpsych/snp_genotypes/psychchip/gwas_qc_report/results/pchip_sczbp.qc.fam\n
+
+"
+
+exit 1
+
+fi
+
+filepath=$1
+
+qcfam=$2
+
+if [ -e Sfilepath/info/1.snpinfo ]
+then
+
+### Exclude all SNPs with INFO < 0.9 and update SNP names where possible and update
+gender and phenotypes
+
+awk '{print $2,52,55}' Sqcfam > Sfilepath/temp_sex_update.txt
+awk '{print $2,$2,$6}' Sqcfam > Sfilepath/temp_pheno_update.txt
+## Converte imputed vcf files to plink binary files
+
+foriin {1..22}
+
+do
+
+# Produce second time with vef to allow vcf-min-gp filtering o f0.9
+
+plink2 --vcf Sfilepath/Si.vcf.gz \
+—keep-allele-order \
+-vcf-idspace-to _\
+--vcf-min-gp 0.9 \
+--biallelic-only strict \
+—const-fid \
+~allow-extra-chr 0 \
+--split-x b37 no-fail \
+--make-bed \
+--out Sfilepath/temp_Si
+
+## Update RS numbers, 2 arguments: 1) name of bim file 2) chromosome number
+
+Rscript
+/home/molpsych/programs/molpsych_toolkit/scripts/update_snps_fromInfo.R Sfilepath
+temp_Si.bim $i
+
+mv Sfilepath/temp_Si.bim.new $Sfilepath/temp_Si.bim
+## Update files
+
+awk '$3>=0.9 {print Sfilepath}' Sfilepath/info/Si.snpinfo >
+Sfilepath/temp_info_passSi.txt
+
+awk '$3>=0.9 {print Sfilepath,$2}' Sfilepath/info/Si.snpinfo | awk 'S2!="."" >
+Sfilepath/temp_info_pass_snpNameSi.txt
+
+plink2 --bfile Sfilepath/temp_Si --extract Sfilepath/temp_info_passSi.txt --make-bed -
+-out Sfilepath/temp2_Si
+
+awk ‘{print $2,$2,53,54,$5,56}' Sfilepath/temp2_S$i.fam >
+Sfilepath/temp2_Si.fam.new
+
+mv Sfilepath/temp2_Si.fam.new Sfilepath/temp2_Si.fam
+
+plink2 --bfile Sfilepath/temp2_Si --allow-no-sex --pheno
+Sfilepath/temp_pheno_update.txt --update-sex Sfilepath/temp_sex_update.txt —update-
+name Sfilepath/temp_info_pass_snpName$i.txt --make-bed —out $filepath/$i
+
+done
+
+#1rm -f Sfilepath/temp*
+# # #H# Only for psychchip - Create subset that only contains Controls
+
+# for iin {1..22}
+
+#do
+# plink2 --bfile Sfilepath/Si --keep
+/home/molpsych/data/pheno/diagnosis_all_chips_controls.txt --make-bed --out
+
+Sfilepath/Si.ctrl
+
+#done
+
+echo "Plink binary files have been writen to the input folder"
+echo -e "\nEnd of script\n"
+
+else
+echo -e "\nSfilepath/info/1.snpinfo does not exist"
+
+echo -e "\n\nPlease generate SNP info before running VCF to Plink - info is needed to
+
+determine which SNPs are to be included in plink set!\n\n"
+fi
+
+## Produce file first with bcftools to get correct file names
+# bcftools norm -Ou -m -any Sfilepath/Si.vcf.gz |
+
+# bcftools norm -Ou -f
+/home/molpsych/data/GRCh37_reference/human_g1k_v37.fasta |
+
+# beftools annotate -Ob -x ID \
+# = -1+'%CHROM:%POS:%REF:%ALT' | \
+# plink2 --bcf /dev/stdin \
+
+# = --keep-allele-order \
+# = --vcf-idspace-to _ \
+
+# = --biallelic-only strict \
+# = = --const-fid \
+
+# = --allow-extra-chr 0 \
+# = --split-x b37 no-fail \
+# = --make-bed \
+
+# = --out Sfilepath/temp_namessi
