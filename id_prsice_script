@@ -1,0 +1,55 @@
+## PRSice is better with -9/NA (check whether you are using binary or quantatitive phenotype)
+for missing data
+
+Rscript /home/molpsych/programs/PRSice2/PRSice .R \
+--prsice /home/molpsych/programs/PRSice2/PRSice_linux \
+--bar-levels 5e-08 ,le-07 ,1le-06,1e-05, 1e-04,1e-3,0.01,0.05,.0.5,1\
+
+--base
+/mnt/10tbstore/projects/alc_symptom_score_gwas/ASPD/PRS/DONE/adhd_eur_jun2017/adh
+d_eur_jun2017 \
+
+--clump-kb 250 \
+--clump-p 1.000000 \
+--clump-r2 0.100000 \
+--fastscore \
+
+--score std \
+
+--snp SNP \
+
+--pvalue P \
+--ALAI\
+
+--A2 A2\
+
+--bp BP\
+
+--chr CHR \
+
+--stat OR \
+
+--cov final.pca.txt \
+
+--coy-col PCAI.PCA2,PCA3 \
+
+--pheno /mnt/10tbstore/projects/ava/ID_PRSice/ADHD/phenotype_ID_200720.txt \
+--pheno-col ADHD \
+
+--binary-target T \
+
+--base-info INFO:0.9\
+
+--interval 0.000000050 \
+
+--lower Se-08 \
+
+--model add \
+
+--out PRSice_ADHD_260720 \
+
+--seed 3228425514 \
+
+--target /mnt/10tbstore/projects/ava/psychchip_ID_imputed/psychchip_ID_qc_info0.8 \
+
+--ignore-fid T
